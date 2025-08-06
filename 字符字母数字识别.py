@@ -662,7 +662,7 @@ def predict_and_display(model, image_path):
 # 5. 主函数
 def main():
     # 加载模型 (替换为您的模型路径)
-    MODEL_PATH = "best_main_model.h5"  # 例如: "models/char_classifier.h5"
+    MODEL_PATH = "models/best_main_model.h5"  # 例如: "models/char_classifier.h5"
     model = load_model(MODEL_PATH)
 
     # 打印模型摘要

@@ -1,14 +1,13 @@
 import cv2
+import matplotlib
 import numpy as np
 import os
 import matplotlib.pyplot as plt
-import matplotlib
-from scipy.signal import medfilt, find_peaks
-
+import scipy
 matplotlib.use('TkAgg')
 plt.rcParams['font.sans-serif'] = ['SimHei']
 
-
+# 可视化
 def visualize_step(title, image, color_conversion=None):
     """可视化处理步骤的辅助函数"""
     if color_conversion:
@@ -27,7 +26,7 @@ def visualize_step(title, image, color_conversion=None):
     cv2.destroyWindow(title)
     return display_img
 
-
+# 车牌定位
 def locate_license_plate(image_path):
     # 1. 读取原始图像
     original = cv2.imread(image_path)
@@ -274,7 +273,7 @@ def improved_preprocess_plate_image(plate_img):
     # 6. 智能边框检测
     # 水平投影
     horizontal_proj = np.sum(opened, axis=1)
-    smoothed_hproj = medfilt(horizontal_proj, kernel_size=5)  # 中值滤波平滑
+    smoothed_hproj = scipy.signal.medfilt(horizontal_proj, kernel_size=5)  # 中值滤波平滑
 
     # 自适应阈值
     h_threshold = np.max(smoothed_hproj) * 0.1
@@ -288,7 +287,7 @@ def improved_preprocess_plate_image(plate_img):
 
     # 垂直投影
     vertical_proj = np.sum(opened, axis=0)
-    smoothed_vproj = medfilt(vertical_proj, kernel_size=5)
+    smoothed_vproj = scipy.signal.medfilt(vertical_proj, kernel_size=5)
 
     v_threshold = np.max(smoothed_vproj) * 0.05
     valid_cols = np.where(smoothed_vproj > v_threshold)[0]
@@ -304,29 +303,6 @@ def improved_preprocess_plate_image(plate_img):
     cropped_gray = enhanced[top:bottom + 1, left:right + 1]
 
     return cropped_binary, cropped_gray
-
-
-def merge_adjacent_regions(regions, target_count):
-    """合并相邻区域，使数量降至目标值"""
-    regions = sorted(regions, key=lambda r: r["x"])
-    while len(regions) > target_count:
-        # 找到间距最小的相邻区域对
-        min_gap = float('inf')
-        min_idx = 0
-        for i in range(len(regions) - 1):
-            gap = regions[i + 1]["x"] - (regions[i]["x"] + regions[i]["w"])
-            if gap < min_gap:
-                min_gap = gap
-                min_idx = i
-        # 合并这两个区域
-        merged = {
-            "x": regions[min_idx]["x"],
-            "y": min(regions[min_idx]["y"], regions[min_idx + 1]["y"]),
-            "w": regions[min_idx + 1]["x"] + regions[min_idx + 1]["w"] - regions[min_idx]["x"],
-            "h": max(regions[min_idx]["h"], regions[min_idx + 1]["h"])
-        }
-        regions = regions[:min_idx] + [merged] + regions[min_idx + 2:]
-    return regions
 
 
 def improved_split_characters(processed_img, original_img):
@@ -423,7 +399,7 @@ def improved_split_characters(processed_img, original_img):
 
     return characters
 
-
+# 对分割后的黑白字符车牌进一步去噪
 def refine_character(char_img, extra):
     """
     字符精炼：生成32×48黑白二值图像
@@ -658,12 +634,6 @@ def load_model(model_path):
     return tf.keras.models.load_model(model_path)
 
 
-import os
-import numpy as np
-import matplotlib.pyplot as plt
-from PIL import Image
-
-
 def predict_characters(model, characters_folder):
     """
     预测characters文件夹下的所有字符并在单张图中汇总结果
@@ -775,7 +745,7 @@ def predict_characters(model, characters_folder):
 # 5. 预测主函数
 def main():
     # 加载模型 (替换为您的模型路径)
-    MODEL_PATH = "best_main_model.h5"  # 例如: "models/char_classifier.h5"
+    MODEL_PATH = "models/best_main_model.h5"  # 例如: "models/char_classifier.h5"
     model = load_model(MODEL_PATH)
 
     # 打印模型摘要
@@ -794,7 +764,7 @@ if __name__ == "__main__":
     # 改进思路：车牌的第一个字符一定是汉字，用汉字模型识别，车牌的第二个字符一定是字母，用字母模式识别，车牌之后的字符，用字母和数字模型识别
 
     # 替换为您的车牌图像路径
-    image_path = "test7.png"
+    image_path = "test4.png"
 
     # 执行车牌定位
     plate_img = locate_license_plate(image_path)
